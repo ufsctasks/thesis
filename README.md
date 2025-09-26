@@ -1,6 +1,6 @@
 ﻿# MIPS_S CP0 – Extensão com Suporte a Interrupções e Exceções
 
-Este projeto implementa uma **extensão do Coprocessador 0 (CP0)** para o núcleo educacional **MIPS_S**, adicionando suporte a **exceções precisas** e **tratamento de interrupções**, de acordo com a descrição apresentada nos capítulos 3 e 5 do livro *See MIPS Run* (D. Sweetman).
+Este projeto implementa uma **extensão do Coprocessador 0 (CP0)** para o núcleo educacional **MIPS_S**, adicionando suporte a **exceções precisas** e **tratamento de interrupções**.
 
 ---
 
@@ -71,5 +71,6 @@ O projeto visa permitir que o núcleo MIPS_S tenha suporte básico para:
 ---
 
 ##  Estrutura do Repositório
+
 
 
