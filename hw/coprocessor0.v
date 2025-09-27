@@ -1,11 +1,11 @@
 module coprocessor0(
   input         clk, reset,
 
-  input   [7:0] interrupts,        // IRQ externas
+  input   [7:0] interrupts,        // IRQ externas colocar de 7 a 4
 
   input         cop0write,         // pulso MTC0
-  input   [4:0] cp0_readaddress, 
-  input   [4:0] cp0_writeaddress,
+  input   [4:0] cp0_readaddress,  // mudar para 8 bits para sel
+  input   [4:0] cp0_writeaddress, 
   input   [31:0] writecop0,        // dado vindo da ULA
   input   [31:0] pc,
   input         syscall,  
@@ -26,7 +26,8 @@ module coprocessor0(
   wire        iec;
 
   // === TIMER (Count/Compare) ===
-  wire timer_hit = (count == compare);
+  wire timer_hit = (count == compare); 
+  //associar o pino 
   reg  timer_pending;
 
   always @(posedge clk) begin
@@ -120,13 +121,13 @@ module coprocessor0(
         else
           cop0readdata = 32'hXXXXXXXX;
       end
-      //5'd12: cop0readdata = statusreg;   // Status
+      //5'd12: cop0readdata = statusreg;   // Status colocar suporte ao campo sel.
       //5'd20: cop0readdata = intctl_value; // IntCtl em numero livre **********@Rodrigo.pereira**************
       //caso nao tenha suporte ao campo sel.
-      5'd13: cop0readdata = causereg;  // Cause
-      5'd14: cop0readdata = epc;       // EPC
-      5'd9 : cop0readdata = count;     // Count
-      5'd11: cop0readdata = compare;   // Compare
+      5'd13: cop0readdata = causereg;  // Cause add
+      5'd14: cop0readdata = epc;       // EPC add
+      5'd9 : cop0readdata = count;     // Count add
+      5'd11: cop0readdata = compare;   // Compare add
       default: cop0readdata = 32'hXXXXXXXX;
     endcase
   end

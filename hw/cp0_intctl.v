@@ -3,6 +3,6 @@
 module cp0_intctl (
   output [31:0] rdata
 );
-  assign rdata = 32'h68000010;
-  //0110 1000 0000 0000 0000 0000 0001 0000
+  assign rdata = 32'h68000020;
+  //0110 1000 0000 0000 0000 0000 0010 0000
 endmodule
