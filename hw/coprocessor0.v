@@ -4,11 +4,10 @@ module coprocessor0(
   input   [7:4] interrupts,        // IRQ externas colocar de 7 a 4
 
   input         cop0write,         // pulso MTC0
-  input   [4:0] cp0_read_addr,  // mudar para 8 bits para sel
-  input   [4:0] cp0_write_addr, 
+  input   [7:0] cp0_read_addr,  // mudar para 8 bits para sel
+  input   [7:0] cp0_write_addr, 
   input   [31:0] writecop0,        // dado vindo da ULA
   input   [31:0] pc,
-  input   [2:0] cp0_sel,          // campo sel para selecionar registradores com mesmo numero
   input         syscall,  
   input         ri,                // reserved instruction
   // entradas futuras:
@@ -25,6 +24,8 @@ module coprocessor0(
   wire [31:0] status, cause, epc, count, compare;
   wire [4:0]  exccode;
   wire        iec;
+  wire [4:0] rd  = cp0_readaddress[7:3];
+  wire [2:0] sel = cp0_readaddress[2:0];
 
   // === TIMER (Count/Compare) ===
   // Pulso de "hit" quando Count == Compare
@@ -36,7 +37,7 @@ module coprocessor0(
   always @(posedge clk) begin
     if (reset)
       timer_pending <= 1'b0;
-    else if (cop0write && (cp0_write_addr == 5'b01011))
+    else if (cop0write && (cp0_write_addr == 8'b01011000))
       timer_pending <= 1'b0;       // escrever Compare limpa pending
     else if (timer_hit)
       timer_pending <= 1'b1;       // seta quando Count == Compare
@@ -124,23 +125,14 @@ module coprocessor0(
   );
 
   // --- MFC0 (leitura) ---
-  always @(cp0_read_addr or status or cause or epc or count or compare or cp0_sel) begin
+  always @(cp0_read_addr or status or cause or epc or count or compare) begin
     case (cp0_read_addr)
-    // faz sentido ler Status em 12 e IntCtl 12.1?? ****************@Rodrigo.pereira**************
-    //como posso declarar cp0_sel para essa comparação?
-      5'b1100: begin
-        if(cp0_sel == 3'b000)
-          cop0readdata = status;   // Status
-        else if(cp0_sel == 3'b001)
-          cop0readdata = intctl_value; // IntCtl
-        else
-          cop0readdata = 32'hXXXXXXXX;
-      end
-    // **********@Rodrigo.pereira**************
-      5'b1101: cop0readdata = cause;  // Cause add
-      5'b1110: cop0readdata = epc;       // EPC add
-      5'b1001: cop0readdata = count;     // Count add
-      5'b1011: cop0readdata = compare;   // Compare add
+      8'b01100000: cop0readdata = status;        // Status (12.0)
+      8'b01100001: cop0readdata = intctl_value;  // IntCtl (12.1)
+      8'b01101000: cop0readdata = cause;         // Cause (13.0)
+      8'b01110000: cop0readdata = epc;           // EPC (14.0)
+      8'b01001000: cop0readdata = count;         // Count (9.0)
+      8'b01011000: cop0readdata = compare;       // Compare (11.0)
       default: cop0readdata = 32'hXXXXXXXX;
     endcase
   end
