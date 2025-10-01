@@ -82,7 +82,7 @@ module coprocessor0(
   cp0_status status_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_write_addr == 5'b01100)),
+    .writeenable(cop0write && (cp0_write_addr == 8'b01100000)),
     .activeexception(activeexception),
     .eret(eret),
     .writedata(writecop0),
@@ -104,7 +104,7 @@ module coprocessor0(
   cp0_count count_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_write_addr == 5'b01001)),
+    .writeenable(cop0write && (cp0_write_addr == 8'b01001000)),
     .writedata(writecop0),
     .count(count)
   );
@@ -113,7 +113,7 @@ module coprocessor0(
   cp0_compare compare_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_write_addr == 5'b01011)),
+    .writeenable(cop0write && (cp0_write_addr == 8'b01011000)),
     .writedata(writecop0),
     .compare(compare)
   );
