@@ -1,36 +1,36 @@
 .data
 msg_start: .asciiz "\n== Testando Count/Compare (Timer) ==\n"
 msg_wait:  .asciiz "Aguardando interrupcao do timer...\n"
-msg_done:  .asciiz "Interrupcao do timer tratada!\n"
+msg_done:  .asciiz "Interrupcao tratada pelo handler!\n"
 
 .text
 .globl main
 main:
-    # Imprime cabecalho
+    # Mensagem inicial
     li $v0, 4
     la $a0, msg_start
     syscall
 
-    # Zera Count
+    # Zera flag
     li $t0, 0
-    mtc0 $t0, $9          # CP0 reg 9 = Count
+    sw $t0, flag
 
-    # Configura Compare para disparar depois de alguns ciclos
-    li $t0, 50
-    mtc0 $t0, $11         # CP0 reg 11 = Compare
+    # Programa Compare = Count + 10000
+    mfc0 $t1, $9         # lê Count
+    addiu $t1, $t1, 10000
+    mtc0 $t1, $11        # escreve Compare
 
+    # Mensagem de espera
     li $v0, 4
     la $a0, msg_wait
     syscall
 
-loop:
-    # Le Count e compara com Compare só para debug
-    mfc0 $t1, $9          # lê Count
-    mfc0 $t2, $11         # lê Compare
-    blt $t1, $t2, loop    # espera até count >= compare
+wait_loop:
+    lw $t2, flag
+    beq $t2, $zero, wait_loop
+    nop
 
-    # Depois da interrupção, o handler vai ser chamado
-    # e fazer eret. Continuamos daqui.
+    # Quando flag != 0 → handler foi chamado
     li $v0, 4
     la $a0, msg_done
     syscall
