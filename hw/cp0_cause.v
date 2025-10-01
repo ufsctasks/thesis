@@ -7,22 +7,22 @@ module cp0_cause (
   input        activeexception,
   input  [4:0] exccode,
   input  [7:0] interrupts,  // IP[15:8]
-  output reg [31:0] causereg
+  output reg [31:0] cause
 );
 
   always @(posedge clk) begin
     if (reset) begin
-      causereg <= 32'b0;
+      cause <= 32'b0;
     end
     else begin
       // IP bits são reflexo direto das linhas de IRQ + timer_pending
-      causereg[15:8] <= interrupts;
+      cause[15:8] <= interrupts;
       // TI (bit 30) é reflexo do bit de timer pending
-      causereg[30]   <= interrupts[7];
+      cause[30]   <= interrupts[7];
 
       if (activeexception) begin
-        causereg[6:2] <= exccode;
-        causereg[1:0] <= 2'b00;
+        cause[6:2] <= exccode;
+        cause[1:0] <= 2'b00;
       end
     end
   end

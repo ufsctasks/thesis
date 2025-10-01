@@ -21,7 +21,7 @@ module coprocessor0(
 );
 
   // --- sinais internos ---
-  wire [31:0] statusreg, causereg, epc, count, compare;
+  wire [31:0] status, cause, epc, count, compare;
   wire [4:0]  exccode;
   wire        iec;
 
@@ -71,7 +71,7 @@ module coprocessor0(
     .activeexception(activeexception),
     .eret(eret),
     .writedata(writecop0),
-    .statusreg(statusreg),
+    .status(status),
     .iec(iec)
   );
 
@@ -82,7 +82,7 @@ module coprocessor0(
     .activeexception(activeexception),
     .exccode(exccode),
     .interrupts(interrupts_with_timer),
-    .causereg(causereg)
+    .cause(cause)
   );
 
   // --- COUNT ---
@@ -110,21 +110,21 @@ module coprocessor0(
   );
 
   // --- MFC0 (leitura) ---
-  always @(cp0_readaddress or statusreg or causereg or epc or count or compare) begin
+  always @(cp0_readaddress or status or cause or epc or count or compare) begin
     case (cp0_readaddress)
     // faz sentido ler Status em 12.1 e IntCtl 12.1?? ****************@Rodrigo.pereira**************
       5'd12: begin
         if(cp0_sel == 3'b000)
-          cop0readdata = statusreg;   // Status
+          cop0readdata = status;   // Status
         else if(cp0_sel == 3'b001)
           cop0readdata = intctl_value; // IntCtl
         else
           cop0readdata = 32'hXXXXXXXX;
       end
-      //5'd12: cop0readdata = statusreg;   // Status colocar suporte ao campo sel.
+      //5'd12: cop0readdata = status;   // Status colocar suporte ao campo sel.
       //5'd20: cop0readdata = intctl_value; // IntCtl em numero livre **********@Rodrigo.pereira**************
       //caso nao tenha suporte ao campo sel.
-      5'd13: cop0readdata = causereg;  // Cause add
+      5'd13: cop0readdata = cause;  // Cause add
       5'd14: cop0readdata = epc;       // EPC add
       5'd9 : cop0readdata = count;     // Count add
       5'd11: cop0readdata = compare;   // Compare add
