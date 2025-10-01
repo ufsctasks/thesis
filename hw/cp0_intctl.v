@@ -1,5 +1,5 @@
 // cp0_intctl.v
-// INTCTL Register (CP0 Reg 12 sel=1) - fixed value 0x68000010
+// INTCTL Register (CP0 Reg 12 sel=1) - fixed value 0x68000020
 module cp0_intctl (
   output [31:0] rdata
 );

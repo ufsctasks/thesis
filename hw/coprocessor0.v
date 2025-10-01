@@ -1,13 +1,14 @@
 module coprocessor0(
   input         clk, reset,
 
-  input   [7:0] interrupts,        // IRQ externas colocar de 7 a 4
+  input   [7:4] interrupts,        // IRQ externas colocar de 7 a 4
 
   input         cop0write,         // pulso MTC0
-  input   [4:0] cp0_readaddress,  // mudar para 8 bits para sel
-  input   [4:0] cp0_writeaddress, 
+  input   [4:0] cp0_read_addr,  // mudar para 8 bits para sel
+  input   [4:0] cp0_write_addr, 
   input   [31:0] writecop0,        // dado vindo da ULA
   input   [31:0] pc,
+  input   [2:0] cp0_sel,          // campo sel para selecionar registradores com mesmo numero
   input         syscall,  
   input         ri,                // reserved instruction
   // entradas futuras:
@@ -26,21 +27,34 @@ module coprocessor0(
   wire        iec;
 
   // === TIMER (Count/Compare) ===
+  // Pulso de "hit" quando Count == Compare
   wire timer_hit = (count == compare); 
-  //associar o pino 
+
+  // Latch que indica interrupção pendente do timer (IP[3])
   reg  timer_pending;
 
   always @(posedge clk) begin
     if (reset)
       timer_pending <= 1'b0;
-    else if (cop0write && (cp0_writeaddress == 5'b01011))
+    else if (cop0write && (cp0_write_addr == 5'b01011))
       timer_pending <= 1'b0;       // escrever Compare limpa pending
     else if (timer_hit)
-      timer_pending <= 1'b1;
+      timer_pending <= 1'b1;       // seta quando Count == Compare
   end
 
-  // Vetor de interrupções incluindo Timer no bit mais alto (IP7)
-  wire [7:0] interrupts_with_timer = {timer_pending, interrupts[6:0]};
+  // === Vetor de interrupções (Cause[15:8] = IP[7:0]) ===
+  // Bits mapeados conforme a convenção:
+  // IP[7:4] → pinos externos (entrada do módulo)
+  // IP[3]   → timer interno (Count/Compare)
+  // IP[2]   → reservado (performance counters futuros)
+  // IP[1:0] → reservados (software interrupts)
+  wire [7:0] interrupts_with_timer;
+
+  assign interrupts_with_timer[7:4] = interrupts;     // externas
+  assign interrupts_with_timer[3]   = timer_pending;  // timer interno
+  assign interrupts_with_timer[2]   = 1'b0;           // reservado
+  assign interrupts_with_timer[1:0] = 2'b00;          // reservado
+
 
   // --- Unidade de exceções ---
   cp0_exception exception_unit (
@@ -67,7 +81,7 @@ module coprocessor0(
   cp0_status status_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_writeaddress == 5'b01100)),
+    .writeenable(cop0write && (cp0_write_addr == 5'b01100)),
     .activeexception(activeexception),
     .eret(eret),
     .writedata(writecop0),
@@ -89,7 +103,7 @@ module coprocessor0(
   cp0_count count_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_writeaddress == 5'b01001)),
+    .writeenable(cop0write && (cp0_write_addr == 5'b01001)),
     .writedata(writecop0),
     .count(count)
   );
@@ -98,7 +112,7 @@ module coprocessor0(
   cp0_compare compare_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_writeaddress == 5'b01011)),
+    .writeenable(cop0write && (cp0_write_addr == 5'b01011)),
     .writedata(writecop0),
     .compare(compare)
   );
@@ -110,10 +124,11 @@ module coprocessor0(
   );
 
   // --- MFC0 (leitura) ---
-  always @(cp0_readaddress or status or cause or epc or count or compare) begin
-    case (cp0_readaddress)
-    // faz sentido ler Status em 12.1 e IntCtl 12.1?? ****************@Rodrigo.pereira**************
-      5'd12: begin
+  always @(cp0_read_addr or status or cause or epc or count or compare or cp0_sel) begin
+    case (cp0_read_addr)
+    // faz sentido ler Status em 12 e IntCtl 12.1?? ****************@Rodrigo.pereira**************
+    //como posso declarar cp0_sel para essa comparação?
+      5'b1100: begin
         if(cp0_sel == 3'b000)
           cop0readdata = status;   // Status
         else if(cp0_sel == 3'b001)
@@ -121,13 +136,11 @@ module coprocessor0(
         else
           cop0readdata = 32'hXXXXXXXX;
       end
-      //5'd12: cop0readdata = status;   // Status colocar suporte ao campo sel.
-      //5'd20: cop0readdata = intctl_value; // IntCtl em numero livre **********@Rodrigo.pereira**************
-      //caso nao tenha suporte ao campo sel.
-      5'd13: cop0readdata = cause;  // Cause add
-      5'd14: cop0readdata = epc;       // EPC add
-      5'd9 : cop0readdata = count;     // Count add
-      5'd11: cop0readdata = compare;   // Compare add
+    // **********@Rodrigo.pereira**************
+      5'b1101: cop0readdata = cause;  // Cause add
+      5'b1110: cop0readdata = epc;       // EPC add
+      5'b1001: cop0readdata = count;     // Count add
+      5'b1011: cop0readdata = compare;   // Compare add
       default: cop0readdata = 32'hXXXXXXXX;
     endcase
   end

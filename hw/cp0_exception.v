@@ -4,7 +4,8 @@ module cp0_exception (
   input        syscall,
   input        ri,
   input        iec,
-  input  [7:0] interrupts,
+  input  [7:0] interrupts,   // IP[7:0] (externos + timer)
+
   // futuros:
   input        overflow,
   input        divzero,
@@ -13,9 +14,10 @@ module cp0_exception (
   output reg [4:0] exccode
 );
 
+  // Interrupção ocorre se global IE estiver ligado e existir algum IP ativo
   wire interrupt = iec & (|interrupts);
 
-  always @(*) begin
+  always @(interrupt | overflow | divzero | syscall | ri) begin
     pendingexception = interrupt | overflow | divzero | syscall | ri;
 
     if (interrupt)
@@ -29,7 +31,7 @@ module cp0_exception (
     else if (ri)
       exccode = 5'b01010; // RI (10)
     else
-      exccode = 5'b00000;
+      exccode = 5'b00000; // default
   end
 
 endmodule
