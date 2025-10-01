@@ -24,8 +24,6 @@ module coprocessor0(
   wire [31:0] status, cause, epc, count, compare;
   wire [4:0]  exccode;
   wire        iec;
-  wire [4:0] rd  = cp0_readaddress[7:3];
-  wire [2:0] sel = cp0_readaddress[2:0];
 
   // === TIMER (Count/Compare) ===
   // Pulso de "hit" quando Count == Compare
