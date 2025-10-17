@@ -1,20 +1,19 @@
 module coprocessor0(
   input         clk, reset,
-
-  input   [7:4] interrupts,        // IRQ externas colocar de 7 a 4
-
-  input         cop0write,         // pulso MTC0
+  input         cp0_write_en,         // pulso MTC0
   input   [7:0] cp0_read_addr,  // mudar para 8 bits para sel
   input   [7:0] cp0_write_addr, 
-  input   [31:0] writecop0,        // dado vindo da ULA
-  input   [31:0] pc,
-  input         syscall,  
-  input         ri,                // reserved instruction
+  input   [31:0] cp0_write_data,        // dado vindo da ULA
+  input   [31:0] i_adress,
+  input   [7:4] interrupts,        // IRQ externas colocar de 7 a 4
+  
+  //input         syscall,  
+  //input         ri,                // reserved instruction
   // entradas futuras:
-   input         overflow,
-   input         divzero,
-
-  input         eret,              // return from exception
+  //input         overflow,
+  //input         divzero,
+  //input         eret,              // return from exception
+  
   input         activeexception,
   output reg [31:0] cop0readdata,
   output        pendingexception
@@ -35,7 +34,7 @@ module coprocessor0(
   always @(posedge clk) begin
     if (reset)
       timer_pending <= 1'b0;
-    else if (cop0write && (cp0_write_addr == 8'b01011000))
+    else if (cp0_write_en && (cp0_write_addr == 8'b01011000))
       timer_pending <= 1'b0;       // escrever Compare limpa pending
     else if (timer_hit)
       timer_pending <= 1'b1;       // seta quando Count == Compare
@@ -57,12 +56,12 @@ module coprocessor0(
 
   // --- Unidade de exceções ---
   cp0_exception exception_unit (
-    .syscall(syscall),
-    .ri(ri),
+    //.syscall(syscall),
+    //.ri(ri),
     .iec(iec),
     .interrupts(interrupts_with_timer),
-     .overflow(overflow),
-     .divzero(divzero),
+     //.overflow(overflow),
+     //.divzero(divzero),
     .pendingexception(pendingexception),
     .exccode(exccode)
   );
@@ -72,7 +71,7 @@ module coprocessor0(
     .clk(clk),
     .reset(reset),
     .activeexception(activeexception),
-    .pc(pc),
+    .i_adress(i_adress),
     .epc(epc)
   );
 
@@ -80,10 +79,10 @@ module coprocessor0(
   cp0_status status_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_write_addr == 8'b01100000)),
+    .writeenable(cp0_write_en && (cp0_write_addr == 8'b01100000)),
     .activeexception(activeexception),
     .eret(eret),
-    .writedata(writecop0),
+    .writedata(cp0_write_data),
     .status(status),
     .iec(iec)
   );
@@ -102,8 +101,8 @@ module coprocessor0(
   cp0_count count_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_write_addr == 8'b01001000)),
-    .writedata(writecop0),
+    .writeenable(cp0_write_en && (cp0_write_addr == 8'b01001000)),
+    .writedata(cp0_write_data),
     .count(count)
   );
 
@@ -111,8 +110,8 @@ module coprocessor0(
   cp0_compare compare_unit (
     .clk(clk),
     .reset(reset),
-    .writeenable(cop0write && (cp0_write_addr == 8'b01011000)),
-    .writedata(writecop0),
+    .writeenable(cp0_write_en && (cp0_write_addr == 8'b01011000)),
+    .writedata(cp0_write_data),
     .compare(compare)
   );
 
