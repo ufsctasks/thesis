@@ -4,7 +4,7 @@ module coprocessor0(
   input   [7:0] cp0_read_addr,  // mudar para 8 bits para sel
   input   [7:0] cp0_write_addr, 
   input   [31:0] cp0_write_data,        // dado vindo da ULA
-  input   [31:0] i_adress,
+  //input   [31:0] i_adress,
   input   [7:4] interrupts,        // IRQ externas colocar de 7 a 4
   
   //input         syscall,  
@@ -71,7 +71,7 @@ module coprocessor0(
     .clk(clk),
     .reset(reset),
     .activeexception(activeexception),
-    .i_adress(i_adress),
+    //.i_adress(i_adress),
     .epc(epc)
   );
 
