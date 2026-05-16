@@ -14,6 +14,7 @@
 .kdata 0x00005000
 .align 2
 service_flag: .word 0    # 4 = print string, 8 = read string, 0 = nenhum
+saved_t0:     .word 0    # salva $t0 durante o handler
 
 # ---- Kernel Boot ------------------------------------------------
 .ktext 0x00004000
@@ -51,9 +52,19 @@ handler:
 
 # --- $v0 = 4: print string --------------------------------------
 service_print:
-    li    $k0, 0x00005000
-    li    $k1, 4
-    sw    $k1, 0($k0)         # service_flag = 4
+    sw    $t0, saved_t0        # salva $t0
+    move  $t0, $a0             # $t0 = ponteiro para a string
+    li    $k1, 0x7F00          # $k1 = endereço UART TX
+print_loop:
+    lb    $k0, 0($t0)          # carrega byte atual
+    sb    $k0, 0($k1)          # envia para UART (inclusive o '\0')
+    beq   $k0, $zero, print_done
+    nop
+    addiu $t0, $t0, 1
+    j     print_loop
+    nop
+print_done:
+    lw    $t0, saved_t0        # restaura $t0
     j     advance_epc
     nop
 
