@@ -1,37 +1,39 @@
 // cp0_exception.v
-// Exception logic for syscall, RI, overflow, div0
+// Exception logic for interrupts, syscall, RI, overflow
+//
+// Determina se existe uma excecao pendente e qual o seu codigo (ExcCode),
+// segundo a prioridade definida pela arquitetura MIPS32.
 module cp0_exception (
-  //input        syscall,
-  //input        ri,
-  //input        iec,
-  input  [7:0] interrupts,   // IP[7:0] (externos + timer)
+  input        iec,            // Status[0] - habilitacao global de interrupcoes
+  input  [7:0] interrupts,     // IP[7:0] (externos + timer interno)
 
-  // futuros:
-  //input        overflow,
-  //input        divzero,
+  input        syscall,        // instrucao SYSCALL executada
+  input        ri,             // instrucao reservada / nao implementada
+  input        overflow,       // overflow aritmetico
 
   output reg   pendingexception,
   output reg [4:0] exccode
 );
 
-  // Interrupção ocorre se global IE estiver ligado e existir algum IP ativo
+  // Interrupcao ocorre se a habilitacao global estiver ligada
+  // e existir pelo menos um pedido pendente em IP.
   wire interrupt = iec & (|interrupts);
 
-  always @(interrupt) begin
-    pendingexception = interrupt;
+  always @(*) begin
+    // Ha excecao pendente se houver interrupcao habilitada ou
+    // qualquer condicao sincrona gerada pela instrucao corrente.
+    pendingexception = interrupt | syscall | ri | overflow;
 
     if (interrupt)
-      exccode = 5'b00000; // Interrupt
-    else if (overflow)
-      exccode = 5'b01100; // Overflow (12)
-    else if (divzero)
-      exccode = 5'b01111; // Div by Zero (15)
+      exccode = 5'd0;       // Int      - interrupcao externa ou do timer
     else if (syscall)
-      exccode = 5'b01000; // Syscall (8)
+      exccode = 5'd8;       // Sys      - chamada de sistema
     else if (ri)
-      exccode = 5'b01010; // RI (10)
+      exccode = 5'd10;      // RI       - instrucao reservada
+    else if (overflow)
+      exccode = 5'd12;      // Ov       - overflow aritmetico
     else
-      exccode = 5'b00000; // default
+      exccode = 5'd0;       // valor de repouso
   end
 
 endmodule

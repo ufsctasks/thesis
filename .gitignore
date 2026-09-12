@@ -1,2 +1,24 @@
 promptArtigos.md
 promptReunioes.md
+
+# macOS
+.DS_Store
+
+# Artefatos de simulacao
+sim
+*.vcd
+*.vvp
+*.out
+*.jou
+*.log
+*.wdb
+*.pb
+xsim.dir/
+.Xil/
+
+# Vivado
+*.cache/
+*.hw/
+*.runs/
+*.sim/
+*.gen/

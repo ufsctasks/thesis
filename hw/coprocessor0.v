@@ -5,16 +5,15 @@ module coprocessor0(
   input   [7:0] cp0_write_addr, 
   input   [31:0] cp0_write_data,        // dado vindo da ULA
   //input   [31:0] i_adress,
-  input   [7:4] interrupts,        // IRQ externas colocar de 7 a 4
-  
-  //input         syscall,  
-  //input         ri,                // reserved instruction
-  // entradas futuras:
-  //input         overflow,
-  //input         divzero,
-  //input         eret,              // return from exception
-  
-  input         activeexception,
+  input   [7:4] interrupts,        // IRQ externas, pinos 7 a 4
+
+  // Condicoes sincronas sinalizadas pela unidade de controle do MIPS_S
+  input         syscall,           // instrucao SYSCALL executada
+  input         ri,                // instrucao reservada / nao implementada
+  input         overflow,          // overflow aritmetico
+  input         eret,              // instrucao ERET executada
+
+  input         activeexception,   // CPU notifica que a excecao foi efetivada
   output reg [31:0] cop0readdata,
   output        pendingexception
 );
@@ -56,12 +55,11 @@ module coprocessor0(
 
   // --- Unidade de exceções ---
   cp0_exception exception_unit (
-    //.syscall(syscall),
-    //.ri(ri),
     .iec(iec),
     .interrupts(interrupts_with_timer),
-     //.overflow(overflow),
-     //.divzero(divzero),
+    .syscall(syscall),
+    .ri(ri),
+    .overflow(overflow),
     .pendingexception(pendingexception),
     .exccode(exccode)
   );
@@ -93,7 +91,8 @@ module coprocessor0(
     .reset(reset),
     .activeexception(activeexception),
     .exccode(exccode),
-    .interrupts(interrupts_with_timer),
+    .ip_pending(interrupts_with_timer),
+    .timer_pending(timer_pending),
     .cause(cause)
   );
 
@@ -122,7 +121,7 @@ module coprocessor0(
   );
 
   // --- MFC0 (leitura) ---
-  always @(cp0_read_addr or status or cause or epc or count or compare) begin
+  always @(*) begin
     case (cp0_read_addr)
       8'b01100000: cop0readdata = status;        // Status (12.0)
       8'b01100001: cop0readdata = intctl_value;  // IntCtl (12.1)
