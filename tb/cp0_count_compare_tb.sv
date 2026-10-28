@@ -8,7 +8,8 @@
 // e de retorno) e verifica as saidas produzidas pelo coprocessador.
 //
 // Foco desta versao: o par Count/Compare e o caminho de interrupcao do timer,
-// conforme priorizado na orientacao de 29/09/2025.
+// conforme priorizado na orientacao de 29/09/2025. A secao [10] verifica o
+// registrador EPC (captura do PC, protecao por EXL e escrita por MTC0).
 //
 // Execucao com Icarus Verilog:
 //   iverilog -g2012 -o sim hw/*.v tb/cp0_count_compare_tb.sv && vvp sim
@@ -40,6 +41,7 @@ module cp0_count_compare_tb;
   logic [7:0]  cp0_read_addr;
   logic [7:0]  cp0_write_addr;
   logic [31:0] cp0_write_data;
+  logic [31:0] pc;
   logic [7:4]  interrupts;
   logic        syscall;
   logic        ri;
@@ -66,6 +68,7 @@ module cp0_count_compare_tb;
     .cp0_read_addr    (cp0_read_addr),
     .cp0_write_addr   (cp0_write_addr),
     .cp0_write_data   (cp0_write_data),
+    .pc               (pc),
     .interrupts       (interrupts),
     .syscall          (syscall),
     .ri               (ri),
@@ -175,6 +178,7 @@ module cp0_count_compare_tb;
     cp0_read_addr   = ADDR_STATUS;
     cp0_write_addr  = 8'b0;
     cp0_write_data  = 32'b0;
+    pc              = 32'b0;
     interrupts      = 4'b0000;
     syscall         = 1'b0;
     ri              = 1'b0;
@@ -318,6 +322,36 @@ module cp0_count_compare_tb;
     check_bit("IRQ externa mascarada com IE = 0",
               pendingexception, 1'b0);
     interrupts = 4'b0000;
+
+    // -----------------------------------------------------------------------
+    $display("\n[10] EPC: captura do PC, protecao por EXL e escrita por MTC0");
+    // -----------------------------------------------------------------------
+    // Simula um SYSCALL na instrucao de endereco 0x40
+    pc = 32'h0000_0040;
+    @(negedge clk);
+    syscall         = 1'b1;
+    activeexception = 1'b1;
+    @(negedge clk);
+    syscall         = 1'b0;
+    activeexception = 1'b0;
+
+    mfc0(ADDR_EPC, rd);
+    check_eq("EPC recebe o PC da instrucao (0x40)", rd, 32'h0000_0040);
+
+    // Segunda excecao dentro do handler (EXL = 1): EPC nao pode mudar
+    pc = 32'h0000_4188;
+    take_exception();
+    mfc0(ADDR_EPC, rd);
+    check_eq("EPC preservado com EXL = 1", rd, 32'h0000_0040);
+
+    // Handler avanca o EPC para a instrucao seguinte
+    mtc0(ADDR_EPC, rd + 32'd4);
+    mfc0(ADDR_EPC, rd);
+    check_eq("EPC escrito por MTC0 (EPC + 4)", rd, 32'h0000_0044);
+
+    do_eret();
+    mfc0(ADDR_STATUS, rd);
+    check_bit("Status.EXL limpo apos ERET", rd[1], 1'b0);
 
     // -----------------------------------------------------------------------
     // Resumo

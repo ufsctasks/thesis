@@ -4,7 +4,7 @@ module coprocessor0(
   input   [7:0] cp0_read_addr,  // mudar para 8 bits para sel
   input   [7:0] cp0_write_addr, 
   input   [31:0] cp0_write_data,        // dado vindo da ULA
-  //input   [31:0] i_adress,
+  input   [31:0] pc,                // PC da instrucao no estagio que gera a excecao
   input   [7:4] interrupts,        // IRQ externas, pinos 7 a 4
 
   // Condicoes sincronas sinalizadas pela unidade de controle do MIPS_S
@@ -69,7 +69,10 @@ module coprocessor0(
     .clk(clk),
     .reset(reset),
     .activeexception(activeexception),
-    //.i_adress(i_adress),
+    .exl(status[1]),
+    .pc(pc),
+    .writeenable(cp0_write_en && (cp0_write_addr == 8'b01110000)),
+    .writedata(cp0_write_data),
     .epc(epc)
   );
 
